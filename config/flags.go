@@ -2,9 +2,9 @@ package config
 
 import "flag"
 
-// DbPath where the sqlite file is stored
-var DbPath = flag.String(
-	"db-path",
+// DatabasePath where the sqlite file is stored
+var DatabasePath = flag.String(
+	"database-path",
 	"/var/lib/immich/database/immich.sqlite",
 	"sqlite database file path",
 )
@@ -31,8 +31,8 @@ var ThumbnailPath = flag.String(
 )
 
 // EncodedPath where the encoded videos are stored
-var EncodedPath = flag.String(
-	"encoded-path",
-	"/var/lib/immich/encoded",
+var EncodedVideoPath = flag.String(
+	"encoded-video-path",
+	"/var/lib/immich/encoded-video",
 	"path where encoded videos are sored",
 )

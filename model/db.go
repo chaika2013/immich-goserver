@@ -9,7 +9,7 @@ import (
 var DB *gorm.DB
 
 func Setup() (err error) {
-	DB, err = gorm.Open(sqlite.Open(*config.DbPath), &gorm.Config{
+	DB, err = gorm.Open(sqlite.Open(*config.DatabasePath), &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
 
