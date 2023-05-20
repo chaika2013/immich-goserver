@@ -1,8 +1,9 @@
 # syntax = docker/dockerfile:experimental
 
-FROM golang:1.20 AS build-stage
+FROM golang:1.20.4-alpine3.18 AS build-stage
 
-# Build the application from source
+RUN apk add --no-cache gcc musl-dev
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -14,22 +15,22 @@ COPY controller ./controller
 COPY model ./model
 COPY router ./router
 COPY session ./session
+COPY helper ./helper
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o /immich-goserver -a -ldflags '-linkmode external -extldflags "-static"' .
 
-# Run the tests in the container
 FROM build-stage AS run-test-stage
 RUN go test -v ./...
 
-# Deploy the application binary into a lean image
-FROM scratch AS build-release-stage
-SHELL ["busybox", "sh", "-c"]
+FROM alpine:3.18 AS build-release-stage
+
+RUN apk add --no-cache exiftool
 
 WORKDIR /
 
 COPY --from=build-stage /immich-goserver /immich-goserver
 
-RUN --mount=from=busybox:uclibc,dst=/usr/ mkdir -p /var/lib/immich/database \
+RUN mkdir -p /var/lib/immich/database \
  && mkdir -p /var/lib/immich/upload \
  && mkdir -p /var/lib/immich/library \
  && mkdir -p /var/lib/immich/thumbnail \

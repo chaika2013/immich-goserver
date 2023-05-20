@@ -2,6 +2,8 @@ package controller
 
 import (
 	"bufio"
+	"errors"
+	"hash/crc32"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -10,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/chaika2013/immich-goserver/config"
+	"github.com/chaika2013/immich-goserver/helper"
 	"github.com/chaika2013/immich-goserver/model"
 	"github.com/gin-gonic/gin"
 )
@@ -122,7 +125,10 @@ func UploadFile(c *gin.Context) {
 
 	// TODO: optional key?
 	key := c.Query("key")
-	_ = key
+	if key != "" {
+		c.AbortWithError(http.StatusNotImplemented, errors.New("implement key"))
+		return
+	}
 
 	req := uploadFileReq{}
 	if err := c.ShouldBind(&req); err != nil {
@@ -131,6 +137,10 @@ func UploadFile(c *gin.Context) {
 	}
 
 	// TODO: work with LivePhotoData
+	if req.LivePhotoData != nil {
+		c.AbortWithError(http.StatusNotImplemented, errors.New("implement LivePhotoData"))
+		return
+	}
 
 	// open file
 	assetFile, err := req.AssetData.Open()
@@ -149,15 +159,16 @@ func UploadFile(c *gin.Context) {
 	defer tempFile.Close()
 
 	// copy file
-	written, err := io.Copy(bufio.NewWriter(tempFile), bufio.NewReader(assetFile))
+	crc32Writer := helper.NewCRC32Writer(crc32.Castagnoli, bufio.NewWriter(tempFile))
+	written, err := io.Copy(crc32Writer, bufio.NewReader(assetFile))
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	// TODO calculate crc32
-
-	uploadedAsset, err := model.NewAsset(user, &req.UploadFile, req.AssetData.Filename, written, 0)
+	// create new asset
+	uploadedAsset, err := model.NewAsset(user, &req.UploadFile, req.AssetData.Filename,
+		written, crc32Writer.Sum())
 	if err != nil {
 		os.Remove(tempFile.Name())
 		c.AbortWithError(http.StatusInternalServerError, err)
