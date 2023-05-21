@@ -39,6 +39,16 @@ type Asset struct {
 	FileSize         int64
 	CRC32            uint32
 
-	// exif info
+	// info after asset was processed
 	OriginalDateTime *time.Time `gorm:"index"` // filled in once exif is parsed
+	InLibrary        bool       // false if asset is in upload path
+	AssetPath        string     // file name within the current path
+
+	// exif
+	ExifID uint
+	Exif   Exif
+}
+
+type Exif struct {
+	gorm.Model
 }

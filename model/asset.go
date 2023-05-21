@@ -118,10 +118,10 @@ type UploadedAsset struct {
 	Duplicate bool `json:"duplicate"`
 }
 
-func NewAsset(user *User, uploadFile *UploadFile, originalFileName string, fileSize int64, crc32 uint32) (uploadAsset *UploadedAsset, err error) {
-	duplicate := false
+func NewUploadAsset(user *User, uploadFile *UploadFile, originalFileName string,
+	fileSize int64, crc32 uint32, fileName string) (*Asset, error) {
 
-	asset := Asset{
+	asset := &Asset{
 		UserID: user.ID,
 
 		AssetType:      uploadFile.AssetType,
@@ -137,16 +137,15 @@ func NewAsset(user *User, uploadFile *UploadFile, originalFileName string, fileS
 		OriginalFileName: originalFileName,
 		FileSize:         fileSize,
 		CRC32:            crc32,
+
+		AssetPath: fileName,
 	}
 
 	// create asset and check for duplicates
-	r := DB.Create(&asset)
+	r := DB.Create(asset)
 	if r.Error != nil {
 		return nil, r.Error
 	}
 
-	return &UploadedAsset{
-		ID:        asset.ID,
-		Duplicate: duplicate,
-	}, nil
+	return asset, nil
 }

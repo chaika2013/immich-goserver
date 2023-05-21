@@ -2,7 +2,7 @@
 
 FROM golang:1.20.4-alpine3.18 AS build-stage
 
-RUN apk add --no-cache gcc musl-dev
+RUN apk add --no-cache gcc musl-dev exiftool
 
 WORKDIR /app
 
@@ -12,10 +12,11 @@ RUN go mod download
 COPY *.go ./
 COPY config ./config
 COPY controller ./controller
+COPY helper ./helper
 COPY model ./model
+COPY pipeline ./pipeline
 COPY router ./router
 COPY session ./session
-COPY helper ./helper
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o /immich-goserver -a -ldflags '-linkmode external -extldflags "-static"' .
 

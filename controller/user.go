@@ -2,8 +2,8 @@ package controller
 
 import (
 	"net/http"
-	"strconv"
 
+	"github.com/chaika2013/immich-goserver/helper"
 	"github.com/chaika2013/immich-goserver/model"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +18,7 @@ func GetUserCount(c *gin.Context) {
 func GetMyUserInfo(c *gin.Context) {
 	user := c.MustGet("user").(*model.User)
 	c.JSON(http.StatusOK, gin.H{
-		"id":                   strconv.FormatUint(uint64(user.ID), 10),
+		"id":                   helper.StringID(user.ID),
 		"email":                user.Email,
 		"firstName":            user.FirstName,
 		"lastName":             user.LastName,

@@ -2,8 +2,8 @@ package controller
 
 import (
 	"net/http"
-	"strconv"
 
+	"github.com/chaika2013/immich-goserver/helper"
 	"github.com/chaika2013/immich-goserver/model"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -43,7 +43,7 @@ func Login(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"accessToken":          session.ID(),
-		"userId":               strconv.FormatUint(uint64(user.ID), 10),
+		"userId":               helper.StringID(user.ID),
 		"userEmail":            user.Email,
 		"firstName":            user.FirstName,
 		"lastName":             user.LastName,

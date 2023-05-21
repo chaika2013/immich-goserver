@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/chaika2013/immich-goserver/model"
+	"github.com/chaika2013/immich-goserver/pipeline"
 	"github.com/chaika2013/immich-goserver/router"
 	"github.com/chaika2013/immich-goserver/session"
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	// run processing pipeline
+	pipeline.Setup()
 
 	// run gin
 	gin := gin.Default()

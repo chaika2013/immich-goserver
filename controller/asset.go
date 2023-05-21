@@ -5,7 +5,6 @@ import (
 	"errors"
 	"hash/crc32"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"github.com/chaika2013/immich-goserver/config"
 	"github.com/chaika2013/immich-goserver/helper"
 	"github.com/chaika2013/immich-goserver/model"
+	"github.com/chaika2013/immich-goserver/pipeline"
 	"github.com/gin-gonic/gin"
 )
 
@@ -121,7 +121,6 @@ type uploadFileReq struct {
 
 func UploadFile(c *gin.Context) {
 	user := c.MustGet("user").(*model.User)
-	_ = user
 
 	// TODO: optional key?
 	key := c.Query("key")
@@ -151,14 +150,20 @@ func UploadFile(c *gin.Context) {
 	defer assetFile.Close()
 
 	// temp file
-	tempFile, err := ioutil.TempFile(*config.UploadPath, req.AssetData.Filename+"-*")
+	uploadPath, err := helper.MakeUserUploadDir(user)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	tempFile, err := os.CreateTemp(uploadPath, req.AssetData.Filename+"-*")
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	_, fileName := filepath.Split(tempFile.Name())
 	defer tempFile.Close()
 
-	// copy file
+	// copy file and calculate crc32
 	crc32Writer := helper.NewCRC32Writer(crc32.Castagnoli, bufio.NewWriter(tempFile))
 	written, err := io.Copy(crc32Writer, bufio.NewReader(assetFile))
 	if err != nil {
@@ -167,13 +172,19 @@ func UploadFile(c *gin.Context) {
 	}
 
 	// create new asset
-	uploadedAsset, err := model.NewAsset(user, &req.UploadFile, req.AssetData.Filename,
-		written, crc32Writer.Sum())
+	asset, err := model.NewUploadAsset(user, &req.UploadFile, req.AssetData.Filename,
+		written, crc32Writer.Sum(), fileName)
 	if err != nil {
 		os.Remove(tempFile.Name())
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	c.JSON(http.StatusCreated, uploadedAsset)
+	// start processing file
+	pipeline.Enqueue(asset.ID, pipeline.AllJobs)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"id":        helper.StringID(asset.ID),
+		"duplicate": false,
+	})
 }

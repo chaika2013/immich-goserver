@@ -36,3 +36,10 @@ var EncodedVideoPath = flag.String(
 	"/var/lib/immich/encoded-video",
 	"path where encoded videos are sored",
 )
+
+// How many files are processed in parallel
+var ConcurrentFiles = flag.Int(
+	"concurrent-files",
+	2,
+	"how many files are processed concurrently",
+)
