@@ -25,6 +25,7 @@ func main() {
 
 	// run gin
 	gin := gin.Default()
+	gin.SetTrustedProxies(nil)
 
 	// working with session
 	gin.Use(session.Setup())

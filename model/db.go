@@ -17,7 +17,7 @@ func Setup() (err error) {
 		return
 	}
 
-	if err = DB.AutoMigrate(&Asset{}, &User{}); err != nil {
+	if err = DB.AutoMigrate(&Asset{}, &User{}, &Exif{}); err != nil {
 		return
 	}
 

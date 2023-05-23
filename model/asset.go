@@ -1,7 +1,11 @@
 package model
 
 import (
+	"path/filepath"
 	"time"
+
+	"github.com/chaika2013/immich-goserver/config"
+	"github.com/chaika2013/immich-goserver/helper"
 )
 
 type TimeBuckets struct {
@@ -16,7 +20,7 @@ type TimeBucketInfo struct {
 
 func GetTimeBuckets(user *User) (*TimeBuckets, error) {
 	timeBuckets := &TimeBuckets{}
-	r := DB.Model(&Asset{}).Select("strftime(\"%Y-%m-01T00:00:00.000Z\", original_date_time) as time_bucket, count(id) as count").Where("user_id = ?", user.ID).Group("time_bucket").Order("time_bucket desc").Find(&timeBuckets.Buckets)
+	r := DB.Model(&Asset{}).Select("strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) as time_bucket, count(id) as count").Where("user_id = ?", user.ID).Group("time_bucket").Order("time_bucket desc").Find(&timeBuckets.Buckets)
 	if r.Error != nil {
 		return nil, r.Error
 	}
@@ -39,7 +43,7 @@ type AssetInfo struct {
 	OriginalPath     string     `json:"originalPath"`
 	OriginalFileName string     `json:"originalFileName"`
 	ResizePath       string     `json:"resizePath"`
-	FileCreatedAt    string     `json:"fileCreatedAt" gorm:"column:original_date_time"`
+	FileCreatedAt    string     `json:"fileCreatedAt" gorm:"column:date_time_original"`
 	FileModifiedAt   string     `json:"fileModifiedAt"`
 	UpdatedAt        string     `json:"updatedAt"`
 	IsFavorite       bool       `json:"isFavorite"`
@@ -91,7 +95,7 @@ type TagInfo struct {
 }
 
 func GetAssetsByTimeBuckets(user *User, timeBuckets []string) (assets []AssetInfo, err error) {
-	r := DB.Model(&Asset{}).Where("user_id = ? and strftime(\"%Y-%m-01T00:00:00.000Z\", original_date_time) IN ?", user.ID, timeBuckets).Order("original_date_time desc").Find(&assets)
+	r := DB.Model(&Asset{}).Where("user_id = ? and strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) IN ?", user.ID, timeBuckets).Order("date_time_original desc").Find(&assets)
 	return assets, r.Error
 }
 
@@ -148,4 +152,15 @@ func NewUploadAsset(user *User, uploadFile *UploadFile, originalFileName string,
 	}
 
 	return asset, nil
+}
+
+func GetAssetPathByID(assetID uint) (string, error) {
+	var asset Asset
+	r := DB.Select([]string{"user_id", "in_library", "asset_path"}).Find(&asset, assetID)
+
+	basePath := config.UploadPath
+	if asset.InLibrary {
+		basePath = config.LibraryPath
+	}
+	return filepath.Join(*basePath, helper.StringID(asset.UserID), asset.AssetPath), r.Error
 }

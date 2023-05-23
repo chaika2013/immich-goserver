@@ -150,7 +150,7 @@ func UploadFile(c *gin.Context) {
 	defer assetFile.Close()
 
 	// temp file
-	uploadPath, err := helper.MakeUserUploadDir(user)
+	uploadPath, err := helper.MakeUserUploadDir(user.ID)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return

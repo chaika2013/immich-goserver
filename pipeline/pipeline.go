@@ -52,12 +52,17 @@ func Enqueue(assetID uint, jobs uint32) {
 		ID:   assetID,
 		jobs: jobs,
 	}
-	inst.enqueue(asset, 0)
+	inst.enqueue(asset, 0, nil)
 }
 
-func (p *pipeline) enqueue(asset *asset, job uint32) {
+func (p *pipeline) enqueue(asset *asset, job uint32, err error) {
 	if job > 0 {
 		p.semaphore <- struct{}{}
+	}
+
+	if err != nil {
+		// TODO log job failed with error
+		return
 	}
 
 	if job&TerminalJobs > 0 {
@@ -89,8 +94,8 @@ func (p *pipeline) processQueues() {
 		select {
 		case asset := <-p.exifChan.Out():
 			go func() {
-				asset.extractExif()
-				p.enqueue(asset, JobGetExif)
+				err := asset.extractExif()
+				p.enqueue(asset, JobGetExif, err)
 			}()
 			continue
 		default:
@@ -98,14 +103,14 @@ func (p *pipeline) processQueues() {
 		select {
 		case asset := <-p.exifChan.Out():
 			go func() {
-				asset.extractExif()
-				p.enqueue(asset, JobGetExif)
+				err := asset.extractExif()
+				p.enqueue(asset, JobGetExif, err)
 			}()
 			continue
 		case asset := <-p.moveChan.Out():
 			go func() {
-				asset.moveToLibrary()
-				p.enqueue(asset, JobMoveToLibrary)
+				err := asset.moveToLibrary()
+				p.enqueue(asset, JobMoveToLibrary, err)
 			}()
 			continue
 		default:
@@ -113,20 +118,20 @@ func (p *pipeline) processQueues() {
 		select {
 		case asset := <-p.exifChan.Out():
 			go func() {
-				asset.extractExif()
-				p.enqueue(asset, JobGetExif)
+				err := asset.extractExif()
+				p.enqueue(asset, JobGetExif, err)
 			}()
 			continue
 		case asset := <-p.moveChan.Out():
 			go func() {
-				asset.moveToLibrary()
-				p.enqueue(asset, JobMoveToLibrary)
+				err := asset.moveToLibrary()
+				p.enqueue(asset, JobMoveToLibrary, err)
 			}()
 			continue
 		case asset := <-p.thumbnailChan.Out():
 			go func() {
-				asset.generateThumbnail()
-				p.enqueue(asset, JobGenerateThumbnail)
+				err := asset.generateThumbnail()
+				p.enqueue(asset, JobGenerateThumbnail, err)
 			}()
 			continue
 		default:
@@ -134,26 +139,26 @@ func (p *pipeline) processQueues() {
 		select {
 		case asset := <-p.exifChan.Out():
 			go func() {
-				asset.extractExif()
-				p.enqueue(asset, JobGetExif)
+				err := asset.extractExif()
+				p.enqueue(asset, JobGetExif, err)
 			}()
 			continue
 		case asset := <-p.moveChan.Out():
 			go func() {
-				asset.moveToLibrary()
-				p.enqueue(asset, JobMoveToLibrary)
+				err := asset.moveToLibrary()
+				p.enqueue(asset, JobMoveToLibrary, err)
 			}()
 			continue
 		case asset := <-p.thumbnailChan.Out():
 			go func() {
-				asset.generateThumbnail()
-				p.enqueue(asset, JobGenerateThumbnail)
+				err := asset.generateThumbnail()
+				p.enqueue(asset, JobGenerateThumbnail, err)
 			}()
 			continue
 		case asset := <-p.encodeChan.Out():
 			go func() {
-				asset.encodeVideo()
-				p.enqueue(asset, JobEncodeVideo)
+				err := asset.encodeVideo()
+				p.enqueue(asset, JobEncodeVideo, err)
 			}()
 			continue
 		}

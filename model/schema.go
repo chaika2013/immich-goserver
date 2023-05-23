@@ -19,7 +19,7 @@ type User struct {
 type Asset struct {
 	gorm.Model
 
-	// user
+	// asset belongs to user
 	UserID uint `gorm:"index"`
 	User   User
 
@@ -40,15 +40,27 @@ type Asset struct {
 	CRC32            uint32
 
 	// info after asset was processed
-	OriginalDateTime *time.Time `gorm:"index"` // filled in once exif is parsed
+	DateTimeOriginal *time.Time `gorm:"index"` // filled in once exif is parsed
 	InLibrary        bool       // false if asset is in upload path
 	AssetPath        string     // file name within the current path
 
-	// exif
-	ExifID uint
-	Exif   Exif
+	// has-one exif
+	Exif Exif
 }
 
 type Exif struct {
 	gorm.Model
+	AssetID         uint
+	Make            *string    // OLYMPUS OPTICAL CO.,LTD
+	CameraModel     *string    `gorm:"column:model"` // C740UZ
+	ExifImageWidth  *int       // 2048
+	ExifImageHeight *int       // 1536
+	Orientation     *int       // Horizontal (normal)
+	CreateDate      *time.Time // 2003:01:08 18:12:09
+	ModifyDate      *time.Time // 2003:01:08 18:12:09
+	LensModel       *string    // SMC Pentax A 35-70mm
+	FNumber         *float32   // 2.8
+	FocalLength     *float32   // 6.3 mm
+	ISO             *int       // 100
+	ExposureTime    *string    // 1/30
 }
