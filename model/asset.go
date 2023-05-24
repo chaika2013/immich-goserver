@@ -19,19 +19,16 @@ type TimeBucketInfo struct {
 }
 
 func GetTimeBuckets(user *User) (*TimeBuckets, error) {
-	timeBuckets := &TimeBuckets{}
-	r := DB.Model(&Asset{}).Select("strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) as time_bucket, count(id) as count").Where("user_id = ?", user.ID).Group("time_bucket").Order("time_bucket desc").Find(&timeBuckets.Buckets)
-	if r.Error != nil {
-		return nil, r.Error
+	timeBuckets := TimeBuckets{}
+	if err := DB.Model(&Asset{}).Select("strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) as time_bucket, count(id) as count").Where("user_id = ?", user.ID).Group("time_bucket").Order("time_bucket desc").Find(&timeBuckets.Buckets).Error; err != nil {
+		return nil, err
 	}
 
 	var count int64
-	r = DB.Model(&Asset{}).Where("user_id = ?", user.ID).Count(&count)
-	if r.Error != nil {
-		return nil, r.Error
+	if err := DB.Model(&Asset{}).Where("user_id = ?", user.ID).Count(&count).Error; err != nil {
+		return nil, err
 	}
-
-	return timeBuckets, nil
+	return &timeBuckets, nil
 }
 
 type AssetInfo struct {
@@ -95,13 +92,13 @@ type TagInfo struct {
 }
 
 func GetAssetsByTimeBuckets(user *User, timeBuckets []string) (assets []AssetInfo, err error) {
-	r := DB.Model(&Asset{}).Where("user_id = ? and strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) IN ?", user.ID, timeBuckets).Order("date_time_original desc").Find(&assets)
-	return assets, r.Error
+	err = DB.Model(&Asset{}).Where("user_id = ? and strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) IN ?", user.ID, timeBuckets).Order("date_time_original desc").Find(&assets).Error
+	return
 }
 
 func GetAssetIDsByDeviceID(user *User, deviceID string) (assetIDs []string, err error) {
-	r := DB.Model(&Asset{}).Select("device_asset_id").Where("user_id = ? and device_id = ?", user.ID, deviceID).Find(&assetIDs)
-	return assetIDs, r.Error
+	err = DB.Model(&Asset{}).Select("device_asset_id").Where("user_id = ? and device_id = ?", user.ID, deviceID).Find(&assetIDs).Error
+	return
 }
 
 type UploadFile struct {
@@ -125,7 +122,7 @@ type UploadedAsset struct {
 func NewUploadAsset(user *User, uploadFile *UploadFile, originalFileName string,
 	fileSize int64, crc32 uint32, fileName string) (*Asset, error) {
 
-	asset := &Asset{
+	asset := Asset{
 		UserID: user.ID,
 
 		AssetType:      uploadFile.AssetType,
@@ -146,21 +143,27 @@ func NewUploadAsset(user *User, uploadFile *UploadFile, originalFileName string,
 	}
 
 	// create asset and check for duplicates
-	r := DB.Create(asset)
-	if r.Error != nil {
-		return nil, r.Error
+	if err := DB.Create(&asset).Error; err != nil {
+		return nil, err
 	}
 
-	return asset, nil
+	return &asset, nil
 }
 
-func GetAssetPathByID(assetID uint) (string, error) {
+func GetAssetWithRealPathByID(assetID uint) (*Asset, error) {
 	var asset Asset
-	r := DB.Select([]string{"user_id", "in_library", "asset_path"}).Find(&asset, assetID)
+	if err := DB.Find(&asset, assetID).Error; err != nil {
+		return nil, err
+	}
 
 	basePath := config.UploadPath
 	if asset.InLibrary {
 		basePath = config.LibraryPath
 	}
-	return filepath.Join(*basePath, helper.StringID(asset.UserID), asset.AssetPath), r.Error
+	asset.AssetPath = filepath.Join(*basePath, helper.StringID(asset.UserID), asset.AssetPath)
+	return &asset, nil
+}
+
+func MoveAssetToLibrary(asset *Asset, newAssetPath string) error {
+	return DB.Model(asset).Update("asset_path", newAssetPath).Error
 }

@@ -12,7 +12,6 @@ func Setup() (err error) {
 	DB, err = gorm.Open(sqlite.Open(*config.DatabasePath), &gorm.Config{
 		SkipDefaultTransaction: true,
 	})
-
 	if err != nil {
 		return
 	}

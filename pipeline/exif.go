@@ -11,7 +11,7 @@ import (
 )
 
 func (p *asset) extractExif() error {
-	assetPath, err := model.GetAssetPathByID(p.ID)
+	asset, err := model.GetAssetWithRealPathByID(p.ID)
 	if err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func (p *asset) extractExif() error {
 	}
 	defer et.Close()
 
-	fileInfos := et.ExtractMetadata(assetPath)
+	fileInfos := et.ExtractMetadata(asset.AssetPath)
 	if len(fileInfos) != 1 {
 		return fmt.Errorf("EXIF not found")
 	}
@@ -39,18 +39,16 @@ func (p *asset) extractExif() error {
 		CameraModel:     toString(&fileInfo, "Model"),
 		ExifImageWidth:  toInt(&fileInfo, "ExifImageWidth"),
 		ExifImageHeight: toInt(&fileInfo, "ExifImageHeight"),
-		// Orientation:
-		CreateDate:   toDateTime(&fileInfo, "CreateDate"),
-		ModifyDate:   toDateTime(&fileInfo, "ModifyDate"),
-		LensModel:    toString(&fileInfo, "LensModel"),
-		FNumber:      toFloat(&fileInfo, "FNumber"),
-		FocalLength:  toFloat(&fileInfo, "FocalLength"),
-		ISO:          toInt(&fileInfo, "ISO"),
-		ExposureTime: toString(&fileInfo, "ExposureTime"),
+		Orientation:     fromOrientation(&fileInfo),
+		CreateDate:      toDateTime(&fileInfo, "CreateDate"),
+		ModifyDate:      toDateTime(&fileInfo, "ModifyDate"),
+		LensModel:       toString(&fileInfo, "LensModel"),
+		FNumber:         toFloat(&fileInfo, "FNumber"),
+		FocalLength:     fromFocalLength(&fileInfo),
+		ISO:             toInt(&fileInfo, "ISO"),
+		ExposureTime:    toString(&fileInfo, "ExposureTime"),
 	}
-
-	fmt.Println(exif)
-	return nil
+	return model.UpsertExif(&exif, toDateTime(&fileInfo, "DateTimeOriginal"))
 }
 
 func toString(fileInfo *exiftool.FileMetadata, k string) *string {
@@ -70,26 +68,12 @@ func toInt(fileInfo *exiftool.FileMetadata, k string) *int {
 	return &r1
 }
 
-func toFloat(fileInfo *exiftool.FileMetadata, k string) *float32 {
-	if k == "FocalLength" {
-		r := toString(fileInfo, k)
-		if r == nil {
-			return nil
-		}
-		r1 := strings.Trim(*r, " m")
-		r2, err := strconv.ParseFloat(r1, 32)
-		if err != nil {
-			return nil
-		}
-		r3 := float32(r2)
-		return &r3
-	}
+func toFloat(fileInfo *exiftool.FileMetadata, k string) *float64 {
 	r, err := fileInfo.GetFloat(k)
 	if err != nil {
 		return nil
 	}
-	r1 := float32(r)
-	return &r1
+	return &r
 }
 
 func toDateTime(fileInfo *exiftool.FileMetadata, k string) *time.Time {
@@ -103,4 +87,38 @@ func toDateTime(fileInfo *exiftool.FileMetadata, k string) *time.Time {
 		return nil
 	}
 	return &r1
+}
+
+func fromFocalLength(fileInfo *exiftool.FileMetadata) *float64 {
+	r := toString(fileInfo, "FocalLength")
+	if r == nil {
+		return nil
+	}
+	r1 := strings.Trim(*r, " m")
+	r2, err := strconv.ParseFloat(r1, 64)
+	if err != nil {
+		return nil
+	}
+	return &r2
+}
+
+func fromOrientation(fileInfo *exiftool.FileMetadata) *int {
+	r := toString(fileInfo, "Orientation")
+	if r == nil {
+		return nil
+	}
+	orientationMap := map[string]int{
+		"Horizontal (normal)":                 1,
+		"Mirror horizontal":                   2,
+		"Rotate 180":                          3,
+		"Mirror vertical":                     4,
+		"Mirror horizontal and rotate 270 CW": 5,
+		"Rotate 90 CW":                        6,
+		"Mirror horizontal and rotate 90 CW":  7,
+		"Rotate 270 CW":                       8,
+	}
+	if r1, found := orientationMap[*r]; found {
+		return &r1
+	}
+	return nil
 }

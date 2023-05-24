@@ -2,12 +2,13 @@ package model
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
+	ID        uint `gorm:"primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+
 	Email                string `gorm:"unique;index"`
 	Password             string
 	FirstName            string
@@ -17,7 +18,9 @@ type User struct {
 }
 
 type Asset struct {
-	gorm.Model
+	ID        uint `gorm:"primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 
 	// asset belongs to user
 	UserID uint `gorm:"index"`
@@ -49,8 +52,10 @@ type Asset struct {
 }
 
 type Exif struct {
-	gorm.Model
-	AssetID         uint
+	AssetID   uint `gorm:"primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+
 	Make            *string    // OLYMPUS OPTICAL CO.,LTD
 	CameraModel     *string    `gorm:"column:model"` // C740UZ
 	ExifImageWidth  *int       // 2048
@@ -59,8 +64,8 @@ type Exif struct {
 	CreateDate      *time.Time // 2003:01:08 18:12:09
 	ModifyDate      *time.Time // 2003:01:08 18:12:09
 	LensModel       *string    // SMC Pentax A 35-70mm
-	FNumber         *float32   // 2.8
-	FocalLength     *float32   // 6.3 mm
+	FNumber         *float64   // 2.8
+	FocalLength     *float64   // 6.3 mm
 	ISO             *int       // 100
 	ExposureTime    *string    // 1/30
 }

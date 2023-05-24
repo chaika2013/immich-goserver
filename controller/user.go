@@ -10,8 +10,13 @@ import (
 
 func GetUserCount(c *gin.Context) {
 	countAdminsOnly := c.DefaultQuery("admin", "false") == "true"
+	userCount, err := model.GetUserCount(countAdminsOnly)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"userCount": model.GetUserCount(countAdminsOnly),
+		"userCount": userCount,
 	})
 }
 

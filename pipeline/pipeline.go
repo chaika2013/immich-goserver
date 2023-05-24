@@ -1,6 +1,8 @@
 package pipeline
 
 import (
+	"fmt"
+
 	"github.com/chaika2013/immich-goserver/config"
 	"golang.design/x/chann"
 )
@@ -62,6 +64,7 @@ func (p *pipeline) enqueue(asset *asset, job uint32, err error) {
 
 	if err != nil {
 		// TODO log job failed with error
+		fmt.Println(err)
 		return
 	}
 

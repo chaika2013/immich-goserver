@@ -27,7 +27,39 @@ func TestFocalLengthToFloat(t *testing.T) {
 		},
 	}
 
-	focalLength := toFloat(&fileInfo, "FocalLength")
+	focalLength := fromFocalLength(&fileInfo)
 	assert.NotNil(t, focalLength)
-	assert.Equal(t, float32(6.3), *focalLength)
+	assert.EqualValues(t, 6.3, *focalLength)
+}
+
+func TestOrientationToInt(t *testing.T) {
+	{
+		fileInfo := exiftool.FileMetadata{
+			Fields: map[string]interface{}{
+				"Orientation": "Horizontal (normal)",
+			},
+		}
+		orientation := fromOrientation(&fileInfo)
+		assert.NotNil(t, orientation)
+		assert.Equal(t, 1, *orientation)
+	}
+	{
+		fileInfo := exiftool.FileMetadata{
+			Fields: map[string]interface{}{
+				"Orientation": "Mirror horizontal and rotate 270 CW",
+			},
+		}
+		orientation := fromOrientation(&fileInfo)
+		assert.NotNil(t, orientation)
+		assert.Equal(t, 5, *orientation)
+	}
+	{
+		fileInfo := exiftool.FileMetadata{
+			Fields: map[string]interface{}{
+				"Orientation": "Bad format value",
+			},
+		}
+		orientation := fromOrientation(&fileInfo)
+		assert.Nil(t, orientation)
+	}
 }
