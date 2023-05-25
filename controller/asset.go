@@ -14,6 +14,7 @@ import (
 	"github.com/chaika2013/immich-goserver/helper"
 	"github.com/chaika2013/immich-goserver/model"
 	"github.com/chaika2013/immich-goserver/pipeline"
+	"github.com/chaika2013/immich-goserver/view"
 	"github.com/gin-gonic/gin"
 )
 
@@ -114,7 +115,7 @@ func GetUserAssetsByDeviceID(c *gin.Context) {
 }
 
 type uploadFileReq struct {
-	model.UploadFile
+	view.UploadFile
 	AssetData     *multipart.FileHeader `form:"assetData" binding:"required"`
 	LivePhotoData *multipart.FileHeader `form:"livePhotoData"`
 }

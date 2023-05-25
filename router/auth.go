@@ -8,17 +8,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Authentication() gin.HandlerFunc {
-	return sessionBasedAuth
+func AllAuthentication() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sessionBasedAuth(c, false)
+	}
 }
 
-func sessionBasedAuth(c *gin.Context) {
+func AdminAuthentication() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sessionBasedAuth(c, true)
+	}
+}
+
+func sessionBasedAuth(c *gin.Context, adminOnly bool) {
 	session := sessions.Default(c)
 
 	// find session user
 	userID := session.Get("user_id")
 	if userID == nil {
-		apiKeyBasedAuth(c)
+		apiKeyBasedAuth(c, adminOnly)
 		return
 	}
 
@@ -29,11 +37,10 @@ func sessionBasedAuth(c *gin.Context) {
 		return
 	}
 
-	// populate the context
-	c.Set("user", user)
+	authenticate(c, user, adminOnly)
 }
 
-func apiKeyBasedAuth(c *gin.Context) {
+func apiKeyBasedAuth(c *gin.Context, adminOnly bool) {
 	apiKey := c.GetHeader("X-Api-Key")
 	if apiKey == "" {
 		c.AbortWithStatus(http.StatusUnauthorized)
@@ -43,6 +50,16 @@ func apiKeyBasedAuth(c *gin.Context) {
 	// get user by the API key
 	user, err := model.GetUserByAPIKey(apiKey)
 	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	authenticate(c, user, adminOnly)
+}
+
+func authenticate(c *gin.Context, user *model.User, adminOnly bool) {
+	// check for admin
+	if adminOnly && !user.IsAdmin {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}

@@ -92,7 +92,9 @@ func (m *store) Save(r *http.Request, w http.ResponseWriter, s *sessions.Session
 		cookieValue = s.ID
 		m.setValue(s.ID, m.copy(s.Values))
 	}
-	http.SetCookie(w, sessions.NewCookie(s.Name(), cookieValue, s.Options))
+	if w != nil {
+		http.SetCookie(w, sessions.NewCookie(s.Name(), cookieValue, s.Options))
+	}
 	return nil
 }
 

@@ -17,11 +17,13 @@ COPY model ./model
 COPY pipeline ./pipeline
 COPY router ./router
 COPY session ./session
+COPY view ./view
+COPY test ./test
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o /immich-goserver -a -ldflags '-linkmode external -extldflags "-static"' .
 
 FROM build-stage AS run-test-stage
-RUN go test -v ./...
+RUN GIN_MODE=release go test -v ./...
 
 FROM alpine:3.18 AS build-release-stage
 

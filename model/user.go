@@ -1,5 +1,20 @@
 package model
 
+import "time"
+
+type User struct {
+	ID        uint `gorm:"primaryKey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+
+	Email                string `gorm:"unique;index"`
+	Password             string
+	FirstName            string
+	LastName             string
+	ShouldChangePassword bool
+	IsAdmin              bool
+}
+
 func GetUserCount(countAdminsOnly bool) (uint, error) {
 	var count int64
 	query := DB.Model(&User{})

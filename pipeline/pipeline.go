@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chaika2013/immich-goserver/config"
+	"github.com/chaika2013/immich-goserver/view"
 	"golang.design/x/chann"
 )
 
@@ -166,4 +167,7 @@ func (p *pipeline) processQueues() {
 			continue
 		}
 	}
+}
+
+func GetJobStatistics(jobs *view.AllJobs) {
 }

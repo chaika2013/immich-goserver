@@ -29,18 +29,27 @@ func Setup(gin *gin.Engine) {
 		user.GET("count", controller.GetUserCount)
 
 		user = user.Group("")
-		user.Use(Authentication())
-
+		user.Use(AllAuthentication())
 		user.GET("me", controller.GetMyUserInfo)
+
+		user = user.Group("")
+		user.Use(AdminAuthentication())
+		user.GET("", controller.GetAllUsers)
 	}
 
 	asset := gin.Group("/asset")
-	asset.Use(Authentication())
+	asset.Use(AllAuthentication())
 	{
 		asset.GET(":deviceId", controller.GetUserAssetsByDeviceID)
 		asset.POST("count-by-time-bucket", controller.GetAssetCountByTimeBucket)
 		asset.POST("time-bucket", controller.GetAssetByTimeBucket)
 		asset.GET("thumbnail/:id", controller.GetAssetThumbnail)
 		asset.POST("upload", controller.UploadFile)
+	}
+
+	jobs := gin.Group("/jobs")
+	jobs.Use(AdminAuthentication())
+	{
+		jobs.GET("", controller.GetAllJobsStatus)
 	}
 }

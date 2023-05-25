@@ -51,6 +51,7 @@ func (p *asset) moveToLibrary() error {
 	}
 
 	// update db
+	oldAssetPath := asset.AssetPath
 	if err := model.MoveAssetToLibrary(asset, newAssetPath); err != nil {
 		// if db update is failed, remove new file
 		os.Remove(newFile)
@@ -58,7 +59,7 @@ func (p *asset) moveToLibrary() error {
 	}
 
 	// remove old file if all is ok
-	if err := os.Remove(asset.AssetPath); err != nil {
+	if err := os.Remove(oldAssetPath); err != nil {
 		// TODO log that file remove failed
 		_ = err
 	}
