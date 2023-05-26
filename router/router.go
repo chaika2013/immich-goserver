@@ -29,16 +29,16 @@ func Setup(gin *gin.Engine) {
 		user.GET("count", controller.GetUserCount)
 
 		user = user.Group("")
-		user.Use(AllAuthentication())
+		user.Use(Authentication(false))
 		user.GET("me", controller.GetMyUserInfo)
 
 		user = user.Group("")
-		user.Use(AdminAuthentication())
+		user.Use(Authentication(true))
 		user.GET("", controller.GetAllUsers)
 	}
 
 	asset := gin.Group("/asset")
-	asset.Use(AllAuthentication())
+	asset.Use(Authentication(false))
 	{
 		asset.GET(":deviceId", controller.GetUserAssetsByDeviceID)
 		asset.POST("count-by-time-bucket", controller.GetAssetCountByTimeBucket)
@@ -49,7 +49,7 @@ func Setup(gin *gin.Engine) {
 	}
 
 	jobs := gin.Group("/jobs")
-	jobs.Use(AdminAuthentication())
+	jobs.Use(Authentication(true))
 	{
 		jobs.GET("", controller.GetAllJobsStatus)
 	}

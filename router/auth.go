@@ -9,15 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AllAuthentication() gin.HandlerFunc {
+func Authentication(isAdmin bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sessionBasedAuth(c, false)
-	}
-}
-
-func AdminAuthentication() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		sessionBasedAuth(c, true)
+		sessionBasedAuth(c, isAdmin)
 	}
 }
 
