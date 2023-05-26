@@ -35,31 +35,157 @@ func TestGetAllJobsStatusNotAdmin(t *testing.T) {
 }
 
 func TestGetAllJobsStatus(t *testing.T) {
-	// router := FromScratch(t)
-	// AddTestUsers(t)
-	// token := FakeLogin(t, router, 2)
+	router := FromScratch(t)
+	AddTestUsers(t)
+	token := FakeLogin(t, router, 1)
 
-	// w := httptest.NewRecorder()
-	// req, _ := http.NewRequest("GET", "/jobs", nil)
-	// req.AddCookie(&http.Cookie{Name: "immich_access_token", Value: token})
-	// router.e.ServeHTTP(w, req)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/jobs", nil)
+	req.AddCookie(&http.Cookie{Name: "immich_access_token", Value: token})
+	router.e.ServeHTTP(w, req)
 
-	// assert.Equal(t, 200, w.Code)
-	// fmt.Println(w.Body.String())
-	// // assert.JSONEq(t, `
-	// // 	[
-	// // 		{
-	// // 			"id":"1",
-	// // 			"type":"IMAGE",
-	// // 			"deviceAssetId":"IMG_0_0.jpg-12345",
-	// // 			"ownerId":"1",
-	// // 			"deviceId":"CLI",
-	// // 			"originalFileName":"IMG_0_0.jpg",
-	// // 			"fileCreatedAt":"2000-01-01T00:00:00Z",
-	// // 			"isFavorite":false,
-	// // 			"isArchived":false,
-	// // 			"duration":"0:00:00.000000"
-	// // 		}
-	// // 	]`,
-	// // 	w.Body.String())
+	assert.Equal(t, 200, w.Code)
+	assert.JSONEq(t, `
+	{
+		"metadata-extraction-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"storage-template-migration-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"thumbnail-generation-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"video-conversion-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"object-tagging-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"clip-encoding-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"background-task-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"search-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"recognize-faces-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		},
+		"sidecar-queue": {
+			"jobCounts": {
+				"active": 0,
+				"completed": 0,
+				"failed": 0,
+				"delayed": 0,
+				"waiting": 0,
+				"parsed": 0
+			},
+			"queueStatus": {
+				"isActive": false,
+				"isPaused": false
+			}
+		}
+	}`, w.Body.String())
 }

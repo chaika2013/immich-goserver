@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/chaika2013/immich-goserver/view"
+)
 
 type User struct {
 	ID        uint `gorm:"primaryKey"`
@@ -44,4 +48,13 @@ func GetUserByAPIKey(apiKey string) (*User, error) {
 	var user User
 	err := DB.First(&user).Error
 	return &user, err
+}
+
+func GetAllUsers(userID uint, isAll bool) (users []view.User, err error) {
+	db := DB.Model(&User{})
+	if !isAll {
+		db = db.Where("id <> ?", userID)
+	}
+	err = db.Find(&users).Error
+	return
 }

@@ -55,7 +55,9 @@ func Enqueue(assetID uint, jobs uint32) {
 		ID:   assetID,
 		jobs: jobs,
 	}
-	inst.enqueue(asset, 0, nil)
+	if inst != nil {
+		inst.enqueue(asset, 0, nil)
+	}
 }
 
 func (p *pipeline) enqueue(asset *asset, job uint32, err error) {

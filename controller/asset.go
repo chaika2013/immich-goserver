@@ -3,12 +3,14 @@ package controller
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"hash/crc32"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/chaika2013/immich-goserver/config"
 	"github.com/chaika2013/immich-goserver/helper"
@@ -23,7 +25,7 @@ type getAssetCountByTimeBucketReq struct {
 }
 
 func GetAssetCountByTimeBucket(c *gin.Context) {
-	user := c.MustGet("user").(*model.User)
+	user := c.MustGet("user").(*view.User)
 
 	req := getAssetCountByTimeBucketReq{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -36,7 +38,7 @@ func GetAssetCountByTimeBucket(c *gin.Context) {
 		return
 	}
 
-	timeBuckets, err := model.GetTimeBuckets(user)
+	timeBuckets, err := model.GetTimeBuckets(user.ID)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -50,7 +52,7 @@ type getAssetByTimeBucketReq struct {
 }
 
 func GetAssetByTimeBucket(c *gin.Context) {
-	user := c.MustGet("user").(*model.User)
+	user := c.MustGet("user").(*view.User)
 
 	req := getAssetByTimeBucketReq{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -58,7 +60,7 @@ func GetAssetByTimeBucket(c *gin.Context) {
 		return
 	}
 
-	assets, err := model.GetAssetsByTimeBuckets(user, req.TimeBucket)
+	assets, err := model.GetAssetsByTimeBuckets(user.ID, req.TimeBucket)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -72,8 +74,7 @@ type getAssetThumbnailReq struct {
 }
 
 func GetAssetThumbnail(c *gin.Context) {
-	user := c.MustGet("user").(*model.User)
-	_ = user
+	user := c.MustGet("user").(*view.User)
 
 	req := getAssetThumbnailReq{}
 	if err := c.ShouldBindUri(&req); err != nil {
@@ -84,12 +85,11 @@ func GetAssetThumbnail(c *gin.Context) {
 	format := c.Query("format")
 	if format != "JPEG" && format != "WEBP" {
 		c.AbortWithStatus(http.StatusBadRequest)
+		return
 	}
 
-	// TODO: find the thumbnail
-
-	// TODO: serve correct file
-	c.File(filepath.Join(*config.ThumbnailPath, "45dddf9b-1fd3-413f-902f-798ad68c1e5b.webp"))
+	c.File(filepath.Join(*config.ThumbnailPath, helper.StringID(user.ID),
+		fmt.Sprintf("%s.%s", req.ID, strings.ToLower(format))))
 }
 
 type getUserAssetsByDeviceIDReq struct {
@@ -97,7 +97,7 @@ type getUserAssetsByDeviceIDReq struct {
 }
 
 func GetUserAssetsByDeviceID(c *gin.Context) {
-	user := c.MustGet("user").(*model.User)
+	user := c.MustGet("user").(*view.User)
 
 	req := getUserAssetsByDeviceIDReq{}
 	if err := c.ShouldBindUri(&req); err != nil {
@@ -105,7 +105,7 @@ func GetUserAssetsByDeviceID(c *gin.Context) {
 		return
 	}
 
-	deviceAssetIDs, err := model.GetAssetIDsByDeviceID(user, req.DeviceID)
+	deviceAssetIDs, err := model.GetAssetIDsByDeviceID(user.ID, req.DeviceID)
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -121,7 +121,7 @@ type uploadFileReq struct {
 }
 
 func UploadFile(c *gin.Context) {
-	user := c.MustGet("user").(*model.User)
+	user := c.MustGet("user").(*view.User)
 
 	// TODO: optional key?
 	key := c.Query("key")
@@ -171,9 +171,13 @@ func UploadFile(c *gin.Context) {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
+	if err := crc32Writer.Flush(); err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 
 	// create new asset
-	asset, err := model.NewUploadAsset(user, &req.UploadFile, req.AssetData.Filename,
+	asset, err := model.NewUploadAsset(user.ID, &req.UploadFile, req.AssetData.Filename,
 		written, crc32Writer.Sum(), fileName)
 	if err != nil {
 		os.Remove(tempFile.Name())
@@ -188,4 +192,33 @@ func UploadFile(c *gin.Context) {
 		"id":        helper.StringID(asset.ID),
 		"duplicate": false,
 	})
+}
+
+type checkDuplicateAssetReq struct {
+	DeviceAssetId string `json:"deviceAssetId" binding:"required"`
+	DeviceId      string `json:"deviceId" binding:"required"`
+}
+
+func CheckDuplicateAsset(c *gin.Context) {
+	user := c.MustGet("user").(*view.User)
+
+	req := checkDuplicateAssetReq{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	assetID, err := model.FindAssetByAssetIDAndDeviceID(user.ID, req.DeviceId, req.DeviceAssetId)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	var jsonBody gin.H
+	if assetID != nil {
+		jsonBody = gin.H{"isExist": true, "id": *assetID}
+	} else {
+		jsonBody = gin.H{"isExist": false}
+	}
+	c.JSON(http.StatusOK, jsonBody)
 }

@@ -1,5 +1,7 @@
 package view
 
+import "time"
+
 // time buckets
 type TimeBuckets struct {
 	Count   uint             `json:"totalCount"`
@@ -21,7 +23,7 @@ type AssetInfo struct {
 	// OriginalPath     string `json:"originalPath"`
 	OriginalFileName string `json:"originalFileName"`
 	// ResizePath       string `json:"resizePath"`
-	FileCreatedAt string `json:"fileCreatedAt" gorm:"column:date_time_original"`
+	FileCreatedAt string `json:"fileCreatedAt,omitempty" gorm:"column:date_time_original"`
 	// FileModifiedAt string `json:"fileModifiedAt"`
 	// UpdatedAt      string `json:"updatedAt"`
 	IsFavorite bool `json:"isFavorite"`
@@ -74,16 +76,16 @@ type AssetInfo struct {
 
 // uploading asset
 type UploadFile struct {
-	AssetType      string `form:"assetType" binding:"required"`
-	DeviceAssetID  string `form:"deviceAssetId" binding:"required"`
-	DeviceID       string `form:"deviceId" binding:"required"`
-	FileCreatedAt  string `form:"fileCreatedAt" binding:"required"`
-	FileModifiedAt string `form:"fileModifiedAt" binding:"required"`
-	IsFavorite     bool   `form:"isFavorite"`
-	IsArchived     bool   `form:"isArchived"`
-	IsVisible      bool   `form:"isVisible"`
-	FileExtension  string `form:"fileExtension" binding:"required"`
-	Duration       string `form:"duration"`
+	AssetType      string    `form:"assetType" binding:"required"`
+	DeviceAssetID  string    `form:"deviceAssetId" binding:"required"`
+	DeviceID       string    `form:"deviceId" binding:"required"`
+	FileCreatedAt  time.Time `form:"fileCreatedAt" binding:"required"`
+	FileModifiedAt time.Time `form:"fileModifiedAt" binding:"required"`
+	IsFavorite     bool      `form:"isFavorite"`
+	IsArchived     bool      `form:"isArchived"`
+	IsVisible      bool      `form:"isVisible"`
+	FileExtension  string    `form:"fileExtension" binding:"required"`
+	Duration       string    `form:"duration"`
 }
 
 type UploadedAsset struct {

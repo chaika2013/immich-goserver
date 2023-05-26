@@ -44,18 +44,17 @@ func TestLogin(t *testing.T) {
 	token, w := DoLogin(t, router, "test1.user1@gmail.com", "123456")
 
 	assert.Equal(t, 201, w.Code)
-	assert.JSONEq(t,
-		`{
-			"accessToken":"`+token+`",
-			"userId":"1",
-			"isAdmin":true,
-			"userEmail":"test1.user1@gmail.com",
-			"firstName":"Test1",
-			"lastName":"User1",
-			"shouldChangePassword":false,
-			"profileImagePath":""
-		}`,
-		w.Body.String())
+	assert.JSONEq(t, `
+	{
+		"accessToken":"`+token+`",
+		"userId":"1",
+		"isAdmin":true,
+		"userEmail":"test1.user1@gmail.com",
+		"firstName":"Test1",
+		"lastName":"User1",
+		"shouldChangePassword":false,
+		"profileImagePath":""
+	}`, w.Body.String())
 }
 
 func TestLogout(t *testing.T) {

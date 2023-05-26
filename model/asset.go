@@ -7,6 +7,7 @@ import (
 	"github.com/chaika2013/immich-goserver/config"
 	"github.com/chaika2013/immich-goserver/helper"
 	"github.com/chaika2013/immich-goserver/view"
+	"gorm.io/gorm"
 )
 
 type Asset struct {
@@ -43,14 +44,14 @@ type Asset struct {
 	Exif Exif
 }
 
-func GetTimeBuckets(user *User) (*view.TimeBuckets, error) {
+func GetTimeBuckets(userID uint) (*view.TimeBuckets, error) {
 	timeBuckets := view.TimeBuckets{}
-	if err := DB.Model(&Asset{}).Select("strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) as time_bucket, count(id) as count").Where("user_id = ?", user.ID).Group("time_bucket").Order("time_bucket desc").Find(&timeBuckets.Buckets).Error; err != nil {
+	if err := DB.Model(&Asset{}).Select("strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) as time_bucket, count(id) as count").Where("user_id = ?", userID).Group("time_bucket").Order("time_bucket desc").Find(&timeBuckets.Buckets).Error; err != nil {
 		return nil, err
 	}
 
 	var count int64
-	if err := DB.Model(&Asset{}).Where("user_id = ?", user.ID).Count(&count).Error; err != nil {
+	if err := DB.Model(&Asset{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
 		return nil, err
 	}
 	timeBuckets.Count = uint(count)
@@ -58,27 +59,39 @@ func GetTimeBuckets(user *User) (*view.TimeBuckets, error) {
 	return &timeBuckets, nil
 }
 
-func GetAssetsByTimeBuckets(user *User, timeBuckets []string) (assets []view.AssetInfo, err error) {
-	err = DB.Model(&Asset{}).Where("user_id = ? and strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) IN ?", user.ID, timeBuckets).Order("date_time_original desc").Find(&assets).Error
+func GetAssetsByTimeBuckets(userID uint, timeBuckets []string) (assets []view.AssetInfo, err error) {
+	withEmptyBucket := false
+	for _, bucket := range timeBuckets {
+		if bucket == "" {
+			withEmptyBucket = true
+			break
+		}
+	}
+	checkIsNull := ""
+	if withEmptyBucket {
+		checkIsNull = " or date_time_original is null"
+	}
+	query := "user_id = ? and (strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) IN ?" + checkIsNull + ")"
+	err = DB.Model(&Asset{}).Where(query, userID, timeBuckets).Order("date_time_original desc").Find(&assets).Error
 	return
 }
 
-func GetAssetIDsByDeviceID(user *User, deviceID string) (assetIDs []string, err error) {
-	err = DB.Model(&Asset{}).Select("device_asset_id").Where("user_id = ? and device_id = ?", user.ID, deviceID).Find(&assetIDs).Error
+func GetAssetIDsByDeviceID(userID uint, deviceID string) (assetIDs []string, err error) {
+	err = DB.Model(&Asset{}).Select("device_asset_id").Where("user_id = ? and device_id = ?", userID, deviceID).Find(&assetIDs).Error
 	return
 }
 
-func NewUploadAsset(user *User, uploadFile *view.UploadFile, originalFileName string,
+func NewUploadAsset(userID uint, uploadFile *view.UploadFile, originalFileName string,
 	fileSize int64, crc32 uint32, fileName string) (*Asset, error) {
 
 	asset := Asset{
-		UserID: user.ID,
+		UserID: userID,
 
 		AssetType:      uploadFile.AssetType,
 		DeviceID:       uploadFile.DeviceID,
 		DeviceAssetID:  uploadFile.DeviceAssetID,
-		FileCreatedAt:  time.Now(), // TODO uploadFile.FileCreatedAt
-		FileModifiedAt: time.Now(), // TODO uploadFile.FileModifiedAt,
+		FileCreatedAt:  uploadFile.FileCreatedAt,
+		FileModifiedAt: uploadFile.FileModifiedAt,
 		IsFavorite:     uploadFile.IsFavorite,
 		IsArchived:     uploadFile.IsArchived,
 		IsVisible:      uploadFile.IsVisible,
@@ -114,5 +127,17 @@ func GetAssetWithRealPathByID(assetID uint) (*Asset, error) {
 }
 
 func MoveAssetToLibrary(asset *Asset, newAssetPath string) error {
-	return DB.Model(asset).Update("asset_path", newAssetPath).Error
+	return DB.Model(asset).Updates(Asset{AssetPath: newAssetPath, InLibrary: true}).Error
+}
+
+func FindAssetByAssetIDAndDeviceID(userID uint, deviceID string, deviceAssetID string) (*string, error) {
+	var assetID string
+	err := DB.Model(&Asset{}).Select("id").Where("device_id = ? and device_asset_id = ?", deviceID, deviceAssetID).First(&assetID).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &assetID, nil
 }

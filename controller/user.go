@@ -3,8 +3,8 @@ package controller
 import (
 	"net/http"
 
-	"github.com/chaika2013/immich-goserver/helper"
 	"github.com/chaika2013/immich-goserver/model"
+	"github.com/chaika2013/immich-goserver/view"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,32 +21,19 @@ func GetUserCount(c *gin.Context) {
 }
 
 func GetMyUserInfo(c *gin.Context) {
-	user := c.MustGet("user").(*model.User)
-	c.JSON(http.StatusOK, gin.H{
-		"id":                   helper.StringID(user.ID),
-		"email":                user.Email,
-		"firstName":            user.FirstName,
-		"lastName":             user.LastName,
-		"createdAt":            user.CreatedAt,
-		"profileImagePath":     "",
-		"shouldChangePassword": user.ShouldChangePassword,
-		"isAdmin":              user.IsAdmin,
-		"oauthId":              "",
-	})
+	user := c.MustGet("user").(*view.User)
+	c.JSON(http.StatusOK, user)
 }
 
 func GetAllUsers(c *gin.Context) {
-	// isAll := c.DefaultQuery("isAll", "false") == "true"
+	user := c.MustGet("user").(*view.User)
+	isAll := c.DefaultQuery("isAll", "false") == "true"
 
-	// c.JSON(http.StatusOK, gin.H{
-	// 	"id":                   helper.StringID(user.ID),
-	// 	"email":                user.Email,
-	// 	"firstName":            user.FirstName,
-	// 	"lastName":             user.LastName,
-	// 	"createdAt":            user.CreatedAt,
-	// 	"profileImagePath":     "",
-	// 	"shouldChangePassword": user.ShouldChangePassword,
-	// 	"isAdmin":              user.IsAdmin,
-	// 	"oauthId":              "",
-	// })
+	users, err := model.GetAllUsers(user.ID, isAll)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
 }

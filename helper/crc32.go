@@ -1,12 +1,12 @@
 package helper
 
 import (
+	"bufio"
 	"hash"
 	"hash/crc32"
-	"io"
 )
 
-func NewCRC32Writer(poly uint32, w io.Writer) *CRC32Writer {
+func NewCRC32Writer(poly uint32, w *bufio.Writer) *CRC32Writer {
 	return &CRC32Writer{
 		h: crc32.New(crc32.MakeTable(poly)),
 		w: w,
@@ -15,7 +15,7 @@ func NewCRC32Writer(poly uint32, w io.Writer) *CRC32Writer {
 
 type CRC32Writer struct {
 	h hash.Hash32
-	w io.Writer
+	w *bufio.Writer
 }
 
 func (c *CRC32Writer) Write(p []byte) (n int, err error) {
@@ -27,4 +27,8 @@ func (c *CRC32Writer) Write(p []byte) (n int, err error) {
 // Sum gives the final hash
 func (c *CRC32Writer) Sum() uint32 {
 	return c.h.Sum32()
+}
+
+func (c *CRC32Writer) Flush() error {
+	return c.w.Flush()
 }

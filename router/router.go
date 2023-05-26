@@ -45,6 +45,7 @@ func Setup(gin *gin.Engine) {
 		asset.POST("time-bucket", controller.GetAssetByTimeBucket)
 		asset.GET("thumbnail/:id", controller.GetAssetThumbnail)
 		asset.POST("upload", controller.UploadFile)
+		asset.POST("check", controller.CheckDuplicateAsset)
 	}
 
 	jobs := gin.Group("/jobs")

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/chaika2013/immich-goserver/model"
+	"github.com/chaika2013/immich-goserver/view"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -64,6 +65,17 @@ func authenticate(c *gin.Context, user *model.User, adminOnly bool) {
 		return
 	}
 
+	// convert model User to view User
+	viewUser := view.User{
+		ID:                   user.ID,
+		Email:                user.Email,
+		FirstName:            user.FirstName,
+		LastName:             user.LastName,
+		CreatedAt:            user.CreatedAt,
+		ShouldChangePassword: user.ShouldChangePassword,
+		IsAdmin:              user.IsAdmin,
+	}
+
 	// populate the context
-	c.Set("user", user)
+	c.Set("user", &viewUser)
 }

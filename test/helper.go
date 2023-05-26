@@ -3,9 +3,14 @@ package test
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +18,7 @@ import (
 	"github.com/chaika2013/immich-goserver/model"
 	"github.com/chaika2013/immich-goserver/router"
 	"github.com/chaika2013/immich-goserver/session"
+	"github.com/chaika2013/immich-goserver/view"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -105,23 +111,30 @@ func DoLogin(t *testing.T, router *RouterCtx, user string, password string) (str
 	return cookie.Value, w
 }
 
-func AddTestAssetsForUser(t *testing.T, userID uint, monthBuckets int, countPerBucket int) {
+func AddTestAssetsForUser(t *testing.T, userID uint, monthBuckets int, countPerBucket int, emptyBucket bool) {
 	ts := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-	for i := 0; i < monthBuckets; i++ {
+	for i := 0; i < monthBuckets+1; i++ {
+		if i >= monthBuckets && !emptyBucket {
+			break
+		}
 		for j := 0; j < countPerBucket; j++ {
 			imageName := fmt.Sprintf("IMG_%d_%d.jpg", i, j)
+			fileSize := i*monthBuckets + j
 			asset := model.Asset{
 				UserID:           userID,
 				AssetType:        "IMAGE",
 				DeviceID:         "CLI",
-				DeviceAssetID:    fmt.Sprintf("%s-12345", imageName),
+				DeviceAssetID:    fmt.Sprintf("%s-%d", imageName, fileSize),
 				FileCreatedAt:    time.Now(),
 				FileModifiedAt:   time.Now(),
 				OriginalFileName: imageName,
-				FileSize:         12345,
-				CRC32:            52345234,
+				FileSize:         int64(fileSize),
+				CRC32:            uint32(i*monthBuckets + j),
 				DateTimeOriginal: &ts,
 				Duration:         "0:00:00.000000",
+			}
+			if i == monthBuckets {
+				asset.DateTimeOriginal = nil
 			}
 			err := model.DB.Create(&asset).Error
 			assert.NoError(t, err)
@@ -140,4 +153,40 @@ func FakeLogin(t *testing.T, router *RouterCtx, userID uint) string {
 	router.s.Save(req, nil, session)
 
 	return session.ID
+}
+
+func UploadFile(t *testing.T, fileName string, assetInfo *view.UploadFile) (*bytes.Buffer, string) {
+	var body bytes.Buffer
+
+	file, err := os.Open(filepath.Join("assets", fileName))
+	assert.NoError(t, err)
+	defer file.Close()
+
+	w := multipart.NewWriter(&body)
+	defer w.Close()
+
+	part, _ := w.CreateFormFile("assetData", fileName)
+	io.Copy(part, file)
+	part, _ = w.CreateFormField("assetType")
+	io.Copy(part, strings.NewReader(assetInfo.AssetType))
+	part, _ = w.CreateFormField("deviceAssetId")
+	io.Copy(part, strings.NewReader(assetInfo.DeviceAssetID))
+	part, _ = w.CreateFormField("deviceId")
+	io.Copy(part, strings.NewReader(assetInfo.DeviceID))
+	part, _ = w.CreateFormField("fileCreatedAt")
+	io.Copy(part, strings.NewReader(assetInfo.FileCreatedAt.Format(time.RFC3339Nano)))
+	part, _ = w.CreateFormField("fileModifiedAt")
+	io.Copy(part, strings.NewReader(assetInfo.FileModifiedAt.Format(time.RFC3339Nano)))
+	part, _ = w.CreateFormField("isFavorite")
+	io.Copy(part, strings.NewReader(strconv.FormatBool(assetInfo.IsFavorite)))
+	part, _ = w.CreateFormField("isArchived")
+	io.Copy(part, strings.NewReader(strconv.FormatBool(assetInfo.IsArchived)))
+	part, _ = w.CreateFormField("isVisible")
+	io.Copy(part, strings.NewReader(strconv.FormatBool(assetInfo.IsVisible)))
+	part, _ = w.CreateFormField("fileExtension")
+	io.Copy(part, strings.NewReader(assetInfo.FileExtension))
+	part, _ = w.CreateFormField("duration")
+	io.Copy(part, strings.NewReader(assetInfo.Duration))
+
+	return &body, w.FormDataContentType()
 }

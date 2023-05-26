@@ -2,7 +2,7 @@
 
 FROM golang:1.20.4-alpine3.18 AS build-stage
 
-RUN apk add --no-cache gcc musl-dev exiftool
+RUN apk add --no-cache gcc musl-dev exiftool imagemagick
 
 WORKDIR /app
 
