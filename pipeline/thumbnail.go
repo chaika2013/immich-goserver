@@ -27,7 +27,13 @@ func (p *asset) generateThumbnail() error {
 			asset.AssetType)
 	}
 
-	return err
+	// TODO remove all thumbnail files
+
+	if err != nil {
+		return err
+	}
+
+	return model.UpsertThumbnail(p.ID)
 }
 
 func generateImageThumbnail(asset *model.Asset) error {
@@ -40,6 +46,9 @@ func generateImageThumbnail(asset *model.Asset) error {
 	if err := imageToWebpThumbnail(userAssetPath, asset); err != nil {
 		return err
 	}
+	if err := imageToJpegResize(userAssetPath, asset); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -49,6 +58,18 @@ func imageToWebpThumbnail(userAssetPath string, asset *model.Asset) error {
 	webpFilename := fmt.Sprintf("%d.webp", asset.ID)
 	webpPath := filepath.Join(userAssetPath, webpFilename)
 	cmd := exec.Command("convert", asset.AssetPath, "-auto-orient", "-thumbnail", "250x250", "-unsharp", "0x.5", webpPath)
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return errors.New(stderr.String())
+	}
+	return nil
+}
+
+func imageToJpegResize(userAssetPath string, asset *model.Asset) error {
+	var stderr bytes.Buffer
+	jpegFilename := fmt.Sprintf("%d.jpeg", asset.ID)
+	jpegPath := filepath.Join(userAssetPath, jpegFilename)
+	cmd := exec.Command("convert", asset.AssetPath, "-auto-orient", "-thumbnail", "1440x1440", jpegPath)
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		return errors.New(stderr.String())

@@ -43,9 +43,12 @@ func Setup(gin *gin.Engine) {
 		asset.GET(":deviceId", controller.GetUserAssetsByDeviceID)
 		asset.POST("count-by-time-bucket", controller.GetAssetCountByTimeBucket)
 		asset.POST("time-bucket", controller.GetAssetByTimeBucket)
-		asset.GET("thumbnail/:id", controller.GetAssetThumbnail)
+		asset.GET("thumbnail/:assetId", controller.GetAssetThumbnail)
 		asset.POST("upload", controller.UploadFile)
 		asset.POST("check", controller.CheckDuplicateAsset)
+		asset.GET("assetById/:assetId", controller.GetAssetByID)
+		asset.GET("file/:assetId", controller.ServeFile)
+		// asset.DELETE("", controller.DeleteAsset)
 	}
 
 	jobs := gin.Group("/jobs")

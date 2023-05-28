@@ -70,7 +70,7 @@ func GetAssetByTimeBucket(c *gin.Context) {
 }
 
 type getAssetThumbnailReq struct {
-	ID string `uri:"id" binding:"required"`
+	AssetID string `uri:"assetId" binding:"required"`
 }
 
 func GetAssetThumbnail(c *gin.Context) {
@@ -89,7 +89,7 @@ func GetAssetThumbnail(c *gin.Context) {
 	}
 
 	c.File(filepath.Join(*config.ThumbnailPath, helper.StringID(user.ID),
-		fmt.Sprintf("%s.%s", req.ID, strings.ToLower(format))))
+		fmt.Sprintf("%s.%s", req.AssetID, strings.ToLower(format))))
 }
 
 type getUserAssetsByDeviceIDReq struct {
@@ -222,3 +222,79 @@ func CheckDuplicateAsset(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, jsonBody)
 }
+
+type getAssetByIDReq struct {
+	AssetID uint `uri:"assetId" binding:"required"`
+}
+
+func GetAssetByID(c *gin.Context) {
+	user := c.MustGet("user").(*view.User)
+
+	req := getAssetByIDReq{}
+	if err := c.ShouldBindUri(&req); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	asset, err := model.GetAssetByID(user.ID, req.AssetID)
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+	if asset == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	c.JSON(http.StatusOK, asset)
+}
+
+type serveFileReq struct {
+	AssetID string `uri:"assetId" binding:"required"`
+}
+
+func ServeFile(c *gin.Context) {
+	user := c.MustGet("user").(*view.User)
+
+	req := serveFileReq{}
+	if err := c.ShouldBindUri(&req); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	isThumb := c.DefaultQuery("isThumb", "false") == "true"
+	isWeb := c.DefaultQuery("isWeb", "false") == "true"
+	if isThumb || !isWeb {
+		// TODO: implement
+		c.AbortWithStatus(http.StatusNotImplemented)
+		return
+	}
+
+	c.File(filepath.Join(*config.ThumbnailPath, helper.StringID(user.ID),
+		fmt.Sprintf("%s.jpeg", req.AssetID)))
+}
+
+// type deleteAssetReq struct {
+// 	IDs []string `uri:"ids" binding:"required"`
+// }
+
+// func DeleteAsset(c *gin.Context) {
+// 	// user := c.MustGet("user").(*view.User)
+
+// 	// req := serveFileReq{}
+// 	// if err := c.ShouldBindUri(&req); err != nil {
+// 	// 	c.AbortWithError(http.StatusBadRequest, err)
+// 	// 	return
+// 	// }
+
+// 	// isThumb := c.DefaultQuery("isThumb", "false") == "true"
+// 	// isWeb := c.DefaultQuery("isWeb", "false") == "true"
+// 	// if isThumb || !isWeb {
+// 	// 	// TODO: implement
+// 	// 	c.AbortWithStatus(http.StatusNotImplemented)
+// 	// 	return
+// 	// }
+
+// 	// c.File(filepath.Join(*config.ThumbnailPath, helper.StringID(user.ID),
+// 	// 	fmt.Sprintf("%s.jpeg", req.AssetID)))
+// }

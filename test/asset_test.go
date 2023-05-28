@@ -86,10 +86,11 @@ func TestGetAssetByTimeBucket(t *testing.T) {
 	[
 		{
 			"id":"1",
-			"type":"IMAGE",
 			"deviceAssetId":"IMG_0_0.jpg-0",
 			"ownerId":"1",
 			"deviceId":"CLI",
+			"type":"IMAGE",
+			"originalPath":"-",
 			"originalFileName":"IMG_0_0.jpg",
 			"fileCreatedAt":"2000-01-01T00:00:00Z",
 			"isFavorite":false,
@@ -177,10 +178,11 @@ func TestGetAssetByTimeBucketWithEmptyBucket(t *testing.T) {
 	[
 		{
 			"id":"1",
-			"type":"IMAGE",
 			"deviceAssetId":"IMG_0_0.jpg-0",
 			"ownerId":"1",
 			"deviceId":"CLI",
+			"type":"IMAGE",
+			"originalPath":"-",
 			"originalFileName":"IMG_0_0.jpg",
 			"isFavorite":false,
 			"isArchived":false,
@@ -236,4 +238,32 @@ func TestUploadFile(t *testing.T) {
 	assert.Nil(t, asset.DateTimeOriginal)
 	assert.False(t, asset.InLibrary)
 	assert.True(t, strings.HasPrefix(asset.AssetPath, "file_example_JPG_100kB.jpg-"))
+}
+
+func TestGetAssetByID(t *testing.T) {
+	router := FromScratch(t)
+	AddTestUsers(t)
+	AddTestAssetsForUser(t, 1, 1, 1, false)
+	token := FakeLogin(t, router, 1)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/asset/assetById/1", nil)
+	req.AddCookie(&http.Cookie{Name: "immich_access_token", Value: token})
+	router.e.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	assert.JSONEq(t, `
+	{
+		"id":"1",
+		"deviceAssetId":"IMG_0_0.jpg-0",
+		"ownerId":"1",
+		"deviceId":"CLI",
+		"type":"IMAGE",
+		"originalPath":"-",
+		"originalFileName":"IMG_0_0.jpg",
+		"fileCreatedAt":"2000-01-01T00:00:00Z",
+		"isFavorite":false,
+		"isArchived":false,
+		"duration":"0:00:00.000000"
+	}`, w.Body.String())
 }

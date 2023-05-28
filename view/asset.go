@@ -15,26 +15,26 @@ type TimeBucketInfo struct {
 
 // asset list
 type AssetInfo struct {
-	ID            string `json:"id"`
-	Type          string `json:"type" gorm:"column:asset_type"` // Possible values: [IMAGE, VIDEO, AUDIO, OTHER]
-	DeviceAssetID string `json:"deviceAssetId"`
-	OwnerID       string `json:"ownerId" gorm:"column:user_id"`
-	DeviceID      string `json:"deviceId"`
-	// OriginalPath     string `json:"originalPath"`
+	ID               string `json:"id"`
+	DeviceAssetID    string `json:"deviceAssetId"`
+	OwnerID          string `json:"ownerId"`
+	DeviceID         string `json:"deviceId"`
+	Type             string `json:"type"` // Possible values: [IMAGE, VIDEO, AUDIO, OTHER]
+	OriginalPath     string `json:"originalPath"`
 	OriginalFileName string `json:"originalFileName"`
-	// ResizePath       string `json:"resizePath"`
-	FileCreatedAt string `json:"fileCreatedAt,omitempty" gorm:"column:date_time_original"`
+	ResizePath       string `json:"resizePath,omitempty"` // should be something if thumbnail is present
+	FileCreatedAt    string `json:"fileCreatedAt,omitempty"`
 	// FileModifiedAt string `json:"fileModifiedAt"`
 	// UpdatedAt      string `json:"updatedAt"`
 	IsFavorite bool `json:"isFavorite"`
 	IsArchived bool `json:"isArchived"`
 	// MimeType         string `json:"mimeType"`
-	Duration string `json:"duration"`
-	// WebpPath         string `json:"webpPath"`
+	WebpPath string `json:"webpPath,omitempty"` // should be something if thumbnail is present
 	// EncodedVideoPath string `json:"encodedVideoPath,omitempty"`
+	Duration string `json:"duration"`
+	// LivePhotoVideoID string `json:"livePhotoVideoId,omitempty"`
 	// ExifInfo         *ExifInfo  `json:"exifInfo,omitempty"`
 	// SmartInfo        *SmartInfo `json:"smartInfo,omitempty"`
-	// LivePhotoVideoID string `json:"livePhotoVideoId,omitempty"`
 	// Tags             []TagInfo  `json:"tags,omitempty"`
 }
 

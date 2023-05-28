@@ -40,6 +40,9 @@ type Asset struct {
 	InLibrary        bool       // false if asset is in upload path
 	AssetPath        string     // file name within the current path
 
+	// has thumbnail and resized image
+	HasThumbnail bool // true if has thumbnail
+
 	// has-one exif
 	Exif Exif
 }
@@ -59,6 +62,14 @@ func GetTimeBuckets(userID uint) (*view.TimeBuckets, error) {
 	return &timeBuckets, nil
 }
 
+const assetSelect = `
+	id, asset_type as type, device_asset_id, user_id as owner_id, device_id,
+	original_file_name, date_time_original as file_created_at, is_favorite,
+	is_archived, duration, '-' as original_path,
+	case when has_thumbnail then '-' else null end webp_path,
+	case when has_thumbnail then '-' else null end resize_path
+`
+
 func GetAssetsByTimeBuckets(userID uint, timeBuckets []string) (assets []view.AssetInfo, err error) {
 	withEmptyBucket := false
 	for _, bucket := range timeBuckets {
@@ -72,7 +83,7 @@ func GetAssetsByTimeBuckets(userID uint, timeBuckets []string) (assets []view.As
 		checkIsNull = " or date_time_original is null"
 	}
 	query := "user_id = ? and (strftime(\"%Y-%m-01T00:00:00.000Z\", date_time_original) IN ?" + checkIsNull + ")"
-	err = DB.Model(&Asset{}).Where(query, userID, timeBuckets).Order("date_time_original desc").Find(&assets).Error
+	err = DB.Model(&Asset{}).Select(assetSelect).Where(query, userID, timeBuckets).Order("date_time_original desc").Find(&assets).Error
 	return
 }
 
@@ -140,4 +151,20 @@ func FindAssetByAssetIDAndDeviceID(userID uint, deviceID string, deviceAssetID s
 		return nil, err
 	}
 	return &assetID, nil
+}
+
+func UpsertThumbnail(assetID uint) error {
+	return DB.Model(&Asset{ID: assetID}).Update("has_thumbnail", true).Error
+}
+
+func GetAssetByID(userID uint, assetID uint) (*view.AssetInfo, error) {
+	var asset view.AssetInfo
+	err := DB.Model(&Asset{}).Select(assetSelect).Where("id = ? and user_id = ?", assetID, userID).First(&asset).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &asset, err
 }
